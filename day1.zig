@@ -8,7 +8,9 @@ pub fn main() !void {
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
 
-    const allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
 
     // Read input line by line
     var buf: [1024]u8 = undefined;
