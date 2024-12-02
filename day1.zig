@@ -16,27 +16,63 @@ pub fn main() !void {
     var buf: [1024]u8 = undefined;
 
     const NumT = i32;
-    var list_a = std.ArrayList(NumT).init(allocator);
-    defer list_a.deinit();
-    var list_b = std.ArrayList(NumT).init(allocator);
-    defer list_b.deinit();
+
+    var lists = .{
+        .a = std.ArrayList(NumT).init(allocator),
+        .b = std.ArrayList(NumT).init(allocator),
+    };
+    defer lists.a.deinit();
+    defer lists.b.deinit();
+
     while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| {
         if (line.len == 0) continue;
         var iter = std.mem.splitSequence(u8, line, "   ");
-        try list_a.append(try std.fmt.parseInt(NumT, iter.next().?, 10));
-        try list_b.append(try std.fmt.parseInt(NumT, iter.next().?, 10));
+        try lists.a.append(try std.fmt.parseInt(NumT, iter.next().?, 10));
+        try lists.b.append(try std.fmt.parseInt(NumT, iter.next().?, 10));
     }
 
     // Sort both lists
-    std.sort.heap(NumT, list_a.items, {}, std.sort.asc(NumT));
-    std.sort.heap(NumT, list_b.items, {}, std.sort.asc(NumT));
+    std.sort.heap(NumT, lists.a.items, {}, std.sort.asc(NumT));
+    std.sort.heap(NumT, lists.b.items, {}, std.sort.asc(NumT));
 
     // Now calculate the difference by iterating both concurrently
-    const n_items = list_a.items.len;
-    std.debug.assert(list_b.items.len == n_items);
+    const n_items = lists.a.items.len;
+    std.debug.assert(lists.b.items.len == n_items);
     var total_diff: u32 = 0;
-    for (list_a.items, list_b.items) |a, b| {
+    for (lists.a.items, lists.b.items) |a, b| {
         total_diff += @abs(b - a);
     }
     std.log.info("Total difference was {d}", .{total_diff});
+
+    // Now calculate similarity score
+    var total_sim: i32 = 0;
+    var b_iter = lists.b.items;
+
+    var last_sim: i32 = 0;
+    var last_a: ?i32 = null;
+    for (lists.a.items) |a| {
+        // Deal with repeat values in list a:
+        if (last_a) |prev| {
+            if (prev == a) {
+                total_sim += last_sim;
+                continue;
+            }
+        }
+        // If we've run out of entries in b, finish
+        if (b_iter.len == 0)
+            break;
+
+        // Skip entries less than current entry in a.
+        while (b_iter.len > 0 and b_iter[0] < a)
+            b_iter = b_iter[1..];
+        // Count entries equal to current entry in a.
+        last_sim = 0;
+        while (b_iter.len > 0 and b_iter[0] == a) {
+            b_iter = b_iter[1..];
+            last_sim += a;
+        }
+        total_sim += last_sim;
+        last_a = a;
+    }
+    std.log.info("Total similarity was {d}", .{total_sim});
 }
