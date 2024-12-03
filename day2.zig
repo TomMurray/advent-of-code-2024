@@ -10,16 +10,18 @@ const Direction = enum {
     Desc,
 };
 
-const CheckState = struct {
-    val: ?i32 = null,
-    dir: ?Direction = null,
-};
+fn CheckState(comptime IterT: type) type {
+    return struct {
+        it: IterT,
+        val: ?i32 = null,
+        dir: ?Direction = null,
+    };
+}
 
-fn check_report(comptime IterT: type, _it: IterT) !bool {
-    var it = _it;
+fn check_report(comptime IterT: type, it: IterT) !bool {
     const DataType = i32;
-    var state = CheckState{};
-    return while (it.next()) |entry| {
+    var state = CheckState(IterT){ .it = it };
+    return while (state.it.next()) |entry| {
         const val = try std.fmt.parseInt(DataType, entry, 10);
         if (state.val) |prev_val| {
             const diff = val - prev_val;
