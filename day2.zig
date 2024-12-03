@@ -18,9 +18,10 @@ fn CheckState(comptime IterT: type) type {
     };
 }
 
-fn check_report(comptime IterT: type, it: IterT) !bool {
+fn check_report(comptime StateT: type, state_: StateT) !bool {
+    var state = state_;
     const DataType = i32;
-    var state = CheckState(IterT){ .it = it };
+    var prev_state: ?StateT = null;
     return while (state.it.next()) |entry| {
         const val = try std.fmt.parseInt(DataType, entry, 10);
         if (state.val) |prev_val| {
@@ -38,6 +39,7 @@ fn check_report(comptime IterT: type, it: IterT) !bool {
             state.dir = dir;
         }
         state.val = val;
+        prev_state = state;
     } else true;
 }
 
@@ -55,7 +57,8 @@ pub fn main() !void {
     var total_count: usize = 0;
     while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| : (total_count += 1) {
         const entries = std.mem.splitScalar(u8, line, ' ');
-        safe_count += if (try check_report(@TypeOf(entries), entries)) 1 else 0;
+        const init_state = CheckState(@TypeOf(entries)){ .it = entries };
+        safe_count += if (try check_report(@TypeOf(init_state), init_state)) 1 else 0;
     }
     std.log.info("Total safe reports: {d}/{d}", .{ safe_count, total_count });
 }
