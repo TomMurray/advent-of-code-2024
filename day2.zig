@@ -10,21 +10,25 @@ const Direction = enum {
     Desc,
 };
 
+const CheckState = struct {
+    val: ?i32 = null,
+    dir: ?Direction = null,
+};
+
 fn check_report(comptime IterT: type, _it: IterT) !bool {
     var it = _it;
     const DataType = i32;
-    var prev_val: ?i32 = null;
-    var prev_dir: ?Direction = null;
+    var state = CheckState{};
     std.log.debug("Started new line", .{});
     return while (it.next()) |entry| {
-        const v = try std.fmt.parseInt(DataType, entry, 10);
-        std.log.debug("  Current value is {d}", .{v});
-        if (prev_val) |pv| {
-            const diff = v - pv;
+        const val = try std.fmt.parseInt(DataType, entry, 10);
+        std.log.debug("  Current value is {d}", .{val});
+        if (state.val) |prev_val| {
+            const diff = val - prev_val;
             const dir = if (diff >= 0) Direction.Asc else Direction.Desc;
             std.log.debug("diff={d}, dir is {s}", .{ diff, @tagName(dir) });
-            if (prev_dir) |pd| {
-                if (dir != pd) {
+            if (state.dir) |prev_dir| {
+                if (dir != prev_dir) {
                     std.log.debug("Direction didn't match, aborting", .{});
                     break false;
                 }
@@ -34,9 +38,9 @@ fn check_report(comptime IterT: type, _it: IterT) !bool {
                 std.log.debug("Absolute difference was outside allowed range: {d}", .{abs_diff});
                 break false;
             }
-            prev_dir = dir;
+            state.dir = dir;
         }
-        prev_val = v;
+        state.val = val;
     } else true;
 }
 
