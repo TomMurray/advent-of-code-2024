@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("util.zig");
 
 const Day5Error = error{
     NotEnoughArgs,
@@ -6,13 +7,15 @@ const Day5Error = error{
 };
 
 pub fn main() !void {
-    const argv = std.os.argv;
+    const argv = try std.process.argsAlloc(std.heap.page_allocator);
+    defer std.process.argsFree(std.heap.page_allocator, argv);
+
     if (argv.len != 3) {
         std.log.err("3 args required but only {d} provided", .{argv.len});
         return Day5Error.NotEnoughArgs;
     }
-    const file_path = std.mem.span(argv[1]);
-    const part = try std.fmt.parseInt(i32, std.mem.span(argv[2]), 10);
+    const file_path = argv[1];
+    const part = try std.fmt.parseInt(i32, argv[2], 10);
 
     const file = try std.fs.cwd().openFile(file_path, .{});
 
@@ -26,7 +29,7 @@ pub fn main() !void {
 
     var constraints = ConstraintSet.init(allocator);
 
-    while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try util.readLineOrEof(file.reader(), &buf)) |line| {
         if (line.len == 0)
             break;
         var parts = std.mem.splitScalar(u8, line, '|');
@@ -45,7 +48,7 @@ pub fn main() !void {
     switch (part) {
         1 => {
             var mid_page_sum: i32 = 0;
-            while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| {
+            while (try util.readLineOrEof(file.reader(), &buf)) |line| {
                 var it = std.mem.splitScalar(u8, line, ',');
 
                 var update = std.ArrayList(i32).init(allocator);

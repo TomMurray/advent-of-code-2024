@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("util.zig");
 
 const params = .{
     .min_step = @as(u32, 1),
@@ -44,16 +45,18 @@ fn check_report(comptime IterT: type, it: IterT) !bool {
 pub const std_options: std.Options = .{ .log_level = .info };
 
 pub fn main() !void {
-    const argv = std.os.argv;
+    const argv = try std.process.argsAlloc(std.heap.page_allocator);
+    defer std.process.argsFree(std.heap.page_allocator, argv);
+
     if (argv.len != 2) {
         std.log.err("2 arguments were required but only passed {d}", .{argv.len});
     }
-    const file_path = std.mem.span(argv[1]);
+    const file_path = argv[1];
     const file = try std.fs.cwd().openFile(file_path, .{});
     var buf: [1024]u8 = undefined;
     var safe_count: u32 = 0;
     var total_count: usize = 0;
-    while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| : (total_count += 1) {
+    while (try util.readLineOrEof(file.reader(), &buf)) |line| : (total_count += 1) {
         const entries = std.mem.splitScalar(u8, line, ' ');
         safe_count += if (try check_report(@TypeOf(entries), entries)) 1 else 0;
     }

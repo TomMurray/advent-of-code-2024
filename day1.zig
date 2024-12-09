@@ -1,16 +1,19 @@
 const std = @import("std");
+const util = @import("util.zig");
 
 pub fn main() !void {
-    const argv = std.os.argv;
-    // Input data file path as argument 1
-    std.debug.assert(argv.len == 2);
-    const file_path = std.mem.span(argv[1]);
-    const file = try std.fs.cwd().openFile(file_path, .{});
-    defer file.close();
-
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(gpa.deinit() == .ok);
     const allocator = gpa.allocator();
+
+    const argv = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, argv);
+
+    // Input data file path as argument 1
+    std.debug.assert(argv.len == 2);
+    const file_path = argv[1];
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
 
     // Read input line by line
     var buf: [1024]u8 = undefined;
@@ -24,7 +27,7 @@ pub fn main() !void {
     defer lists.a.deinit();
     defer lists.b.deinit();
 
-    while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try util.readLineOrEof(file.reader(), &buf)) |line| {
         if (line.len == 0) continue;
         var iter = std.mem.splitSequence(u8, line, "   ");
         try lists.a.append(try std.fmt.parseInt(NumT, iter.next().?, 10));

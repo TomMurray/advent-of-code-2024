@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("util.zig");
 
 pub const std_options: std.Options = .{ .log_level = .debug };
 
@@ -65,15 +66,15 @@ fn is_mas_cross(haystack: []const u8, w: usize, c: Coord) bool {
 }
 
 pub fn main() !void {
-    std.log.info("Hello world!", .{});
+    const argv = try std.process.argsAlloc(std.heap.page_allocator);
+    defer std.process.argsFree(std.heap.page_allocator, argv);
 
-    const argv = std.os.argv;
     if (argv.len != 3) {
         std.log.err("3 args required but only {d} provided", .{argv.len});
         return Day4Error.NotEnoughArgs;
     }
-    const file_path = std.mem.span(argv[1]);
-    const part = try std.fmt.parseInt(i32, std.mem.span(argv[2]), 10);
+    const file_path = argv[1];
+    const part = try std.fmt.parseInt(i32, argv[2], 10);
 
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
@@ -83,7 +84,7 @@ pub fn main() !void {
     defer arr.deinit();
 
     var width: ?usize = null;
-    while (try file.reader().readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    while (try util.readLineOrEof(file.reader(), &buf)) |line| {
         std.log.debug("Input row: {s}", .{line});
         std.debug.assert(line.len != 0);
         if (width) |w| {
