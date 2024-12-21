@@ -1,47 +1,12 @@
 const std = @import("std");
 const util = @import("util.zig");
+const Coord = @import("coord.zig").Coord;
 
 pub const std_options: std.Options = .{ .log_level = .info };
 
 const Day8Error = error{
     NotEnoughArgs,
     InvalidPart,
-};
-
-const Coord = struct {
-    x: i32,
-    y: i32,
-
-    pub fn format(
-        self: Coord,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("({d},{d})", .{ self.x, self.y });
-    }
-
-    pub fn flatten(self: *const Coord, width: i32) i32 {
-        return self.*.y * width + self.*.x;
-    }
-
-    pub fn diff(self: *const Coord, other: Coord) Coord {
-        return .{ .x = self.x - other.x, .y = self.y - other.y };
-    }
-
-    pub fn sum(self: *const Coord, other: Coord) Coord {
-        return .{ .x = self.x + other.x, .y = self.y + other.y };
-    }
-
-    pub fn antinode(self: *const Coord, other: Coord) Coord {
-        return self.sum(self.diff(other));
-    }
-
-    pub fn inbounds(self: *const Coord, bounds: Coord) bool {
-        return self.x >= 0 and self.x < bounds.x and self.y >= 0 and self.y < bounds.y;
-    }
 };
 
 pub fn main() !void {
