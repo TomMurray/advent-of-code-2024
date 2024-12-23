@@ -4,6 +4,20 @@ pub const Coord = struct {
     x: i32,
     y: i32,
 
+    pub fn from_x(val: i32) Coord {
+        return .{
+            .x = val,
+            .y = 0,
+        };
+    }
+
+    pub fn from_y(val: i32) Coord {
+        return .{
+            .x = 0,
+            .y = val,
+        };
+    }
+
     pub fn format(
         self: Coord,
         comptime fmt: []const u8,
